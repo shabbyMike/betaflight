@@ -217,13 +217,8 @@
 #define CONTROL_RATE_PROFILE_COUNT  3
 #endif
 
-<<<<<<< HEAD
-#if (FLASH_SIZE > 64)
-//#define USE_ACRO_TRAINER
-=======
 #if (TARGET_FLASH_SIZE > 64)
 #define USE_ACRO_TRAINER
->>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_BLACKBOX
 #define USE_CLI_BATCH
 #define USE_RESOURCE_MGMT
@@ -269,13 +264,8 @@
 #define USE_GYRO_LPF2
 #endif
 
-<<<<<<< HEAD
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 8))
-//#define USE_LAUNCH_CONTROL
-=======
 #if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 8))
 #define USE_LAUNCH_CONTROL
->>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_DYN_LPF
 #define USE_D_MIN
 #endif
@@ -292,28 +282,6 @@
 #define USE_TPA_MODE
 #endif
 
-<<<<<<< HEAD
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 5))
-//#define USE_PWM
-#endif
-
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 4))
-//#define USE_HUFFMAN
-//#define USE_PINIO
-//#define USE_PINIOBOX
-#endif
-
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 3))
-#define USE_TELEMETRY_SENSORS_DISABLED_DETAILS
-#define USE_VTX_TABLE
-#define USE_PERSISTENT_STATS
-#define USE_PROFILE_NAMES
-
-#endif
-
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 2))
-/*#define USE_TELEMETRY_HOTT
-=======
 #if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 5))
 #define USE_PWM
 #endif
@@ -340,7 +308,6 @@
 
 #if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 2))
 #define USE_TELEMETRY_HOTT
->>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_TELEMETRY_LTM
 #define USE_SERIALRX_SUMH       // Graupner legacy protocol
 #define USE_SERIALRX_XBUS*/       // JR
@@ -352,8 +319,6 @@
 #define USE_RTC_TIME
 #define USE_RX_MSP
 #define USE_ESC_SENSOR_INFO
-<<<<<<< HEAD
-=======
 #define USE_CRSF_CMS_TELEMETRY
 #define USE_CRSF_LINK_STATISTICS
 #define USE_RX_RSSI_DBM
@@ -362,66 +327,12 @@
 #endif // TARGET_FLASH_SIZE > 128
 
 #if (TARGET_FLASH_SIZE > 256)
->>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_AIRMODE_LPF
 #define USE_CANVAS
 #define USE_DASHBOARD
 #define USE_ESCSERIAL_SIMONK
 #define USE_SERIAL_4WAY_SK_BOOTLOADER
 #define USE_CMS_FAILSAFE_MENU
-<<<<<<< HEAD
-#define USE_RX_RSSI_DBM
-#define USE_VARIO
-#define USE_RX_LINK_QUALITY_INFO
-#define USE_ESC_SENSOR_TELEMETRY
-#define USE_UNCOMMON_MIXERS
-#define USE_SIGNATURE
-#define USE_ABSOLUTE_CONTROL
-#define USE_TELEMETRY_IBUS
-#define USE_TELEMETRY_IBUS_EXTENDED
-#define USE_GYRO_DLPF_EXPERIMENTAL
-#define USE_SENSOR_NAMES
-#endif
-
-#endif // FLASH_SIZE > 128
-
-#if (FLASH_SIZE > 256)
-
-        //FEATURES THAT I REMOVED ARE PLACED DOWN HERE
-    
-// #define USE_FRSKYOSD
-// #define USE_GPS
-// #define USE_GPS_NMEA
-// #define USE_GPS_UBLOX
-// #define USE_GPS_RESCUE
-// #define USE_CRSF_CMS_TELEMETRY
-// #define USE_CRSF_LINK_STATISTICS
-// #define USE_OSD
-// #define USE_OSD_OVER_MSP_DISPLAYPORT
-// #define USE_MULTI_GYRO
-// #define USE_OSD_ADJUSTMENTS
-// #define USE_SERIALRX_JETIEXBUS
-// #define USE_TELEMETRY_JETIEXBUS
-// #define USE_TELEMETRY_MAVLINK
-// #define USE_HOTT_TEXTMODE
-// #define USE_LED_STRIP_STATUS_MODE
-// #define USE_OSD_PROFILES
-// #define USE_OSD_STICK_OVERLAY
-// #define USE_CMS_GPS_RESCUE_MENU
-// #define USE_SERIALRX_SRXL2     // Spektrum SRXL2 protocol
-// #define USE_INTERPOLATED_SP
-// #ifdef USE_SERIALRX_SPEKTRUM
-// #define USE_SPEKTRUM_BIND
-// #define USE_SPEKTRUM_BIND_PLUG
-// #define USE_SPEKTRUM_REAL_RSSI
-// #define USE_SPEKTRUM_FAKE_RSSI
-// #define USE_SPEKTRUM_RSSI_PERCENT_CONVERSION
-// #define USE_SPEKTRUM_VTX_CONTROL
-// #define USE_SPEKTRUM_VTX_TELEMETRY
-// #define USE_SPEKTRUM_CMS_TELEMETRY
-// #define USE_PIN_PULL_UP_DOWN
-// #endif
-=======
 #define USE_CMS_GPS_RESCUE_MENU
 #define USE_TELEMETRY_SENSORS_DISABLED_DETAILS
 #define USE_VTX_TABLE
@@ -431,5 +342,4 @@
 #define USE_INTERPOLATED_SP
 #define USE_CUSTOM_BOX_NAMES
 #define USE_BATTERY_VOLTAGE_SAG_COMPENSATION
->>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #endif
