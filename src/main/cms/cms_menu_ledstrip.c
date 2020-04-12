@@ -65,8 +65,10 @@ const char * const ledProfileNames[LED_PROFILE_COUNT] = {
 #endif
 };
 
-static const void *cmsx_Ledstrip_OnEnter(void)
+static const void *cmsx_Ledstrip_OnEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     cmsx_FeatureLedstrip = featureIsEnabled(FEATURE_LED_STRIP) ? 1 : 0;
     cmsx_ledProfile = getLedProfile();
     cmsx_ledRaceColor = ledStripConfig()->ledstrip_race_color;
@@ -80,16 +82,17 @@ static const void *cmsx_Ledstrip_OnEnter(void)
     return NULL;
 }
 
-static const void *cmsx_Ledstrip_OnExit(const OSD_Entry *self)
+static const void *cmsx_Ledstrip_OnExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
     if (cmsx_FeatureLedstrip) {
-        featureEnable(FEATURE_LED_STRIP);
+        featureEnableImmediate(FEATURE_LED_STRIP);
         ledStripEnable();
     } else {
         ledStripDisable();
-        featureDisable(FEATURE_LED_STRIP);
+        featureDisableImmediate(FEATURE_LED_STRIP);
     }
 
     setLedProfile(cmsx_ledProfile);

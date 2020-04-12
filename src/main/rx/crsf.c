@@ -68,7 +68,7 @@ static timeUs_t crsfFrameStartAtUs = 0;
 static uint8_t telemetryBuf[CRSF_FRAME_SIZE_MAX];
 static uint8_t telemetryBufLen = 0;
 
-static timeDelta_t lastRcFrameDelta = 0;
+static timeUs_t lastRcFrameTimeUs = 0;
 
 /*
  * CRSF protocol
@@ -152,27 +152,26 @@ typedef struct crsfPayloadLinkstatistics_s {
 
 static timeUs_t lastLinkStatisticsFrameUs;
 
-#ifdef USE_RX_LINK_QUALITY_INFO
-STATIC_UNIT_TESTED uint16_t scaleCrsfLq(uint16_t lqvalue) {
-  return (lqvalue % 100) ? ((lqvalue * 3.41) + 1) : (lqvalue * 3.41);
-}
-#endif
 static void handleCrsfLinkStatisticsFrame(const crsfLinkStatistics_t* statsPtr, timeUs_t currentTimeUs)
 {
     const crsfLinkStatistics_t stats = *statsPtr;
     lastLinkStatisticsFrameUs = currentTimeUs;
+    int16_t rssiDbm = -1 * (stats.active_antenna ? stats.uplink_RSSI_2 : stats.uplink_RSSI_1);
     if (rssiSource == RSSI_SOURCE_RX_PROTOCOL_CRSF) {
-        const uint8_t rssiDbm = stats.active_antenna ? stats.uplink_RSSI_2 : stats.uplink_RSSI_1;
-#ifdef USE_RX_RSSI_DBM
-        setRssiDbm(rssiDbm, RSSI_SOURCE_RX_PROTOCOL_CRSF);
-#endif
-        const uint16_t rssiPercentScaled = scaleRange(rssiDbm, 130, 0, 0, RSSI_MAX_VALUE);
+        const uint16_t rssiPercentScaled = scaleRange(rssiDbm, CRSF_RSSI_MIN, 0, 0, RSSI_MAX_VALUE);
         setRssi(rssiPercentScaled, RSSI_SOURCE_RX_PROTOCOL_CRSF);
     }
+#ifdef USE_RX_RSSI_DBM
+    if (rxConfig()->crsf_use_rx_snr) {
+        rssiDbm = stats.uplink_SNR;
+    }
+    setRssiDbm(rssiDbm, RSSI_SOURCE_RX_PROTOCOL_CRSF);
+#endif
 
 #ifdef USE_RX_LINK_QUALITY_INFO
     if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) {
-        setLinkQualityDirect(scaleCrsfLq((stats.rf_Mode * 100) + stats.uplink_Link_quality));
+        setLinkQualityDirect(stats.uplink_Link_quality);
+        rxSetRfMode(stats.rf_Mode);
     }
 #endif
 
@@ -205,7 +204,11 @@ static void crsfCheckRssi(uint32_t currentTimeUs) {
         if (rssiSource == RSSI_SOURCE_RX_PROTOCOL_CRSF) {
             setRssiDirect(0, RSSI_SOURCE_RX_PROTOCOL_CRSF);
 #ifdef USE_RX_RSSI_DBM
-            setRssiDbmDirect(130, RSSI_SOURCE_RX_PROTOCOL_CRSF);
+            if (rxConfig()->crsf_use_rx_snr) {
+                setRssiDbmDirect(CRSF_SNR_MIN, RSSI_SOURCE_RX_PROTOCOL_CRSF);
+            } else {
+                setRssiDbmDirect(CRSF_RSSI_MIN, RSSI_SOURCE_RX_PROTOCOL_CRSF);
+            }
 #endif
         }
 #ifdef USE_RX_LINK_QUALITY_INFO
@@ -234,7 +237,6 @@ STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *data)
 
     static uint8_t crsfFramePosition = 0;
     const timeUs_t currentTimeUs = microsISR();
-    static timeUs_t lastRcFrameCompleteTimeUs = 0;
 
 #ifdef DEBUG_CRSF_PACKETS
     debug[2] = currentTimeUs - crsfFrameStartAtUs;
@@ -263,8 +265,7 @@ STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *data)
                 {
                     case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
                         if (crsfFrame.frame.deviceAddress == CRSF_ADDRESS_FLIGHT_CONTROLLER) {
-                            lastRcFrameDelta = cmpTimeUs(currentTimeUs, lastRcFrameCompleteTimeUs);
-                            lastRcFrameCompleteTimeUs = currentTimeUs;
+                            lastRcFrameTimeUs = currentTimeUs;
                             crsfFrameDone = true;
                             memcpy(&crsfChannelDataFrame, &crsfFrame, sizeof(crsfFrame));
                         }
@@ -374,9 +375,9 @@ void crsfRxSendTelemetryData(void)
     }
 }
 
-static timeDelta_t crsfFrameDelta(void)
+static timeUs_t crsfFrameTimeUs(void)
 {
-    return lastRcFrameDelta;
+    return lastRcFrameTimeUs;
 }
 
 bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeState_t *rxRuntimeState)
@@ -390,7 +391,7 @@ bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeState_t *rxRuntimeState)
 
     rxRuntimeState->rcReadRawFn = crsfReadRawRC;
     rxRuntimeState->rcFrameStatusFn = crsfFrameStatus;
-    rxRuntimeState->rcFrameDeltaFn = crsfFrameDelta;
+    rxRuntimeState->rcFrameTimeUsFn = crsfFrameTimeUs;
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {

@@ -59,8 +59,9 @@ static uint8_t gpsRescueConfig_altitudeMode;
 static uint16_t gpsRescueConfig_ascendRate;
 static uint16_t gpsRescueConfig_descendRate;
 
-static const void *cms_menuGpsRescuePidOnEnter(void)
+static const void *cms_menuGpsRescuePidOnEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
 
     gpsRescueConfig_throttleP = gpsRescueConfig()->throttleP;
     gpsRescueConfig_throttleI = gpsRescueConfig()->throttleI;
@@ -75,8 +76,9 @@ static const void *cms_menuGpsRescuePidOnEnter(void)
     return NULL;
 }
 
-static const void *cms_menuGpsRescuePidOnExit(const OSD_Entry *self)
+static const void *cms_menuGpsRescuePidOnExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
     gpsRescueConfigMutable()->throttleP = gpsRescueConfig_throttleP;
@@ -121,8 +123,9 @@ CMS_Menu cms_menuGpsRescuePid = {
     .entries = cms_menuGpsRescuePidEntries,
 };
 
-static const void *cmsx_menuGpsRescueOnEnter(void)
+static const void *cmsx_menuGpsRescueOnEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
 
     gpsRescueConfig_angle = gpsRescueConfig()->angle;
     gpsRescueConfig_initialAltitudeM = gpsRescueConfig()->initialAltitudeM;
@@ -143,10 +146,10 @@ static const void *cmsx_menuGpsRescueOnEnter(void)
     return NULL;
 }
 
-static const void *cmsx_menuGpsRescueOnExit(const OSD_Entry *self)
+static const void *cmsx_menuGpsRescueOnExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
-
 
     gpsRescueConfigMutable()->angle = gpsRescueConfig_angle;
     gpsRescueConfigMutable()->initialAltitudeM = gpsRescueConfig_initialAltitudeM;
@@ -183,7 +186,7 @@ const OSD_Entry cmsx_menuGpsRescueEntries[] =
     { "THROTTLE MAX",      OME_UINT16, NULL, &(OSD_UINT16_t){ &gpsRescueConfig_throttleMax, 1000, 2000, 1 }, REBOOT_REQUIRED },
     { "THROTTLE HOV",      OME_UINT16, NULL, &(OSD_UINT16_t){ &gpsRescueConfig_throttleHover, 1000, 2000, 1 }, REBOOT_REQUIRED },
     { "ASCEND RATE",       OME_UINT16, NULL, &(OSD_UINT16_t){ &gpsRescueConfig_ascendRate, 100, 2500, 1 }, REBOOT_REQUIRED },
-    { "DESCEND RATE",      OME_UINT16, NULL, &(OSD_UINT16_t){ &gpsRescueConfig_descendRate, 100, 500, 1 }, REBOOT_REQUIRED },    
+    { "DESCEND RATE",      OME_UINT16, NULL, &(OSD_UINT16_t){ &gpsRescueConfig_descendRate, 100, 500, 1 }, REBOOT_REQUIRED },
     { "ARM WITHOUT FIX",   OME_Bool,  NULL, &gpsRescueConfig_allowArmingWithoutFix, REBOOT_REQUIRED },
     { "MIN SATELITES",     OME_UINT8, NULL, &(OSD_UINT8_t){ &gpsRescueConfig_minSats, 5, 50, 1 }, REBOOT_REQUIRED },
     { "GPS RESCUE PID",    OME_Submenu, cmsMenuChange, &cms_menuGpsRescuePid, 0},

@@ -22,6 +22,8 @@
 
 #include "common/time.h"
 
+#include "drivers/display.h"
+
 #include "pg/pg.h"
 
 #include "sensors/esc_sensor.h"
@@ -141,8 +143,13 @@ typedef enum {
     OSD_RSSI_DBM_VALUE,
     OSD_RC_CHANNELS,
     OSD_CAMERA_FRAME,
+    OSD_EFFICIENCY,
     OSD_ITEM_COUNT // MUST BE LAST
 } osd_items_e;
+
+// *** IMPORTANT ***
+// Whenever new elements are added to 'osd_items_e', make sure to increment
+// the parameter group version for 'osdConfig' in 'osd.c'
 
 // *** IMPORTANT ***
 // DO NOT REORDER THE STATS ENUMERATION. The order here cooresponds to the enabled flag bit position
@@ -225,6 +232,7 @@ typedef enum {
     OSD_WARNING_RSSI,
     OSD_WARNING_LINK_QUALITY,
     OSD_WARNING_RSSI_DBM,
+    OSD_WARNING_OVER_CAP,
     OSD_WARNING_COUNT // MUST BE LAST
 } osdWarningsFlags_e;
 
@@ -249,8 +257,6 @@ extern const uint16_t osdTimerDefault[OSD_TIMER_COUNT];
 extern const osd_stats_e osdStatsDisplayOrder[OSD_STAT_COUNT];
 
 typedef struct osdConfig_s {
-    uint16_t item_pos[OSD_ITEM_COUNT];
-
     // Alarms
     uint16_t cap_alarm;
     uint16_t alt_alarm;
@@ -273,7 +279,7 @@ typedef struct osdConfig_s {
     uint8_t overlay_radio_mode;
     char profile[OSD_PROFILE_COUNT][OSD_PROFILE_NAME_LENGTH + 1];
     uint16_t link_quality_alarm;
-    uint8_t rssi_dbm_alarm;
+    int16_t rssi_dbm_alarm;
     uint8_t gps_sats_show_hdop;
     int8_t rcChannels[OSD_RCCHANNELS_COUNT];  // RC channel values to display, -1 if none
     uint8_t displayPortDevice;                // osdDisplayPortDevice_e
@@ -285,6 +291,12 @@ typedef struct osdConfig_s {
 } osdConfig_t;
 
 PG_DECLARE(osdConfig_t, osdConfig);
+
+typedef struct osdElementConfig_s {
+    uint16_t item_pos[OSD_ITEM_COUNT];
+} osdElementConfig_t;
+
+PG_DECLARE(osdElementConfig_t, osdElementConfig);
 
 typedef struct statistic_s {
     timeUs_t armed_time;
@@ -299,7 +311,7 @@ typedef struct statistic_s {
     int16_t max_esc_temp;
     int32_t max_esc_rpm;
     uint16_t min_link_quality;
-    uint8_t min_rssi_dbm;
+    int16_t min_rssi_dbm;
 } statistic_t;
 
 extern timeUs_t resumeRefreshAt;
@@ -311,8 +323,7 @@ extern float osdGForce;
 extern escSensorData_t *osdEscDataCombined;
 #endif
 
-struct displayPort_s;
-void osdInit(struct displayPort_s *osdDisplayPort);
+void osdInit(displayPort_t *osdDisplayPort, osdDisplayPortDevice_e displayPortDevice);
 bool osdInitialized(void);
 void osdUpdate(timeUs_t currentTimeUs);
 void osdStatSetState(uint8_t statIndex, bool enabled);
@@ -328,4 +339,4 @@ bool osdElementVisible(uint16_t value);
 bool osdGetVisualBeeperState(void);
 statistic_t *osdGetStats(void);
 bool osdNeedsAccelerometer(void);
-struct displayPort_s *osdGetDisplayPort(void);
+displayPort_t *osdGetDisplayPort(osdDisplayPortDevice_e *displayPortDevice);

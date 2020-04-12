@@ -157,8 +157,8 @@ void processRcStickPositions()
         }
     }
     if (stTmp == rcSticks) {
-        if (rcDelayMs <= INT16_MAX - (getTaskDeltaTime(TASK_SELF) / 1000)) {
-            rcDelayMs += getTaskDeltaTime(TASK_SELF) / 1000;
+        if (rcDelayMs <= INT16_MAX - (getTaskDeltaTimeUs(TASK_SELF) / 1000)) {
+            rcDelayMs += getTaskDeltaTimeUs(TASK_SELF) / 1000;
         }
     } else {
         rcDelayMs = 0;
@@ -179,7 +179,7 @@ void processRcStickPositions()
             if (ARMING_FLAG(ARMED) && rxIsReceivingSignal() && !failsafeIsActive()  ) {
                 rcDisarmTicks++;
                 if (rcDisarmTicks > 3) {
-                    disarm();
+                    disarm(DISARM_REASON_SWITCH);
                 }
             }
         }
@@ -189,7 +189,7 @@ void processRcStickPositions()
             // Disarm on throttle down + yaw
             resetTryingToArm();
             if (ARMING_FLAG(ARMED))
-                disarm();
+                disarm(DISARM_REASON_STICKS);
             else {
                 beeper(BEEPER_DISARM_REPEAT);     // sound tone while stick held
                 repeatAfter(STICK_AUTOREPEAT_MS); // disarm tone will repeat

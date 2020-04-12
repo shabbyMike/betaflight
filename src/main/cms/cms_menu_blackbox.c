@@ -31,6 +31,7 @@
 
 #if defined(USE_CMS) && defined(USE_BLACKBOX)
 
+#include "build/debug.h"
 #include "build/version.h"
 
 #include "blackbox/blackbox.h"
@@ -68,6 +69,7 @@ static uint16_t blackboxConfig_p_ratio;
 
 static uint8_t cmsx_BlackboxDevice;
 static OSD_TAB_t cmsx_BlackboxDeviceTable = { &cmsx_BlackboxDevice, 2, cmsx_BlackboxDeviceNames };
+static debugType_e systemConfig_debug_mode;
 
 #define CMS_BLACKBOX_STRING_LENGTH 8
 static char cmsx_BlackboxStatus[CMS_BLACKBOX_STRING_LENGTH];
@@ -172,21 +174,25 @@ static const void *cmsx_EraseFlash(displayPort_t *pDisplay, const void *ptr)
     // Update storage device status to show new used space amount
     cmsx_Blackbox_GetDeviceStatus();
 
-    return NULL;
+    return MENU_CHAIN_BACK;
 }
 #endif // USE_FLASHFS
 
-static const void *cmsx_Blackbox_onEnter(void)
+static const void *cmsx_Blackbox_onEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     cmsx_Blackbox_GetDeviceStatus();
     cmsx_BlackboxDevice = blackboxConfig()->device;
 
     blackboxConfig_p_ratio = blackboxConfig()->p_ratio;
+    systemConfig_debug_mode = systemConfig()->debug_mode;
     return NULL;
 }
 
-static const void *cmsx_Blackbox_onExit(const OSD_Entry *self)
+static const void *cmsx_Blackbox_onExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
     if (blackboxMayEditConfig()) {
@@ -194,9 +200,32 @@ static const void *cmsx_Blackbox_onExit(const OSD_Entry *self)
         blackboxValidateConfig();
     }
     blackboxConfigMutable()->p_ratio = blackboxConfig_p_ratio;
+    systemConfigMutable()->debug_mode = systemConfig_debug_mode;
 
     return NULL;
 }
+
+// Check before erase flash
+#ifdef USE_FLASHFS
+static const OSD_Entry menuEraseFlashCheckEntries[] = {
+    { "CONFIRM ERASE", OME_Label, NULL, NULL, 0},
+    { "YES",           OME_Funcall, cmsx_EraseFlash, NULL,                                                    0 },
+
+    { "NO",            OME_Back, NULL, NULL, 0 },
+    { NULL,            OME_END, NULL, NULL, 0 }
+};
+
+static CMS_Menu cmsx_menuEraseFlashCheck = {
+#ifdef CMS_MENU_DEBUG
+    .GUARD_text = "MENUERASEFLASH",
+    .GUARD_type = OME_MENU,
+#endif
+    .onEnter = NULL,
+    .onExit = NULL,
+    .onDisplayUpdate = NULL,
+    .entries = menuEraseFlashCheckEntries
+};
+#endif
 
 static const OSD_Entry cmsx_menuBlackboxEntries[] =
 {
@@ -206,9 +235,10 @@ static const OSD_Entry cmsx_menuBlackboxEntries[] =
     { "(USED)",      OME_String,  NULL,            &cmsx_BlackboxDeviceStorageUsed,                           0 },
     { "(FREE)",      OME_String,  NULL,            &cmsx_BlackboxDeviceStorageFree,                           0 },
     { "P RATIO",     OME_UINT16,  NULL,            &(OSD_UINT16_t){ &blackboxConfig_p_ratio, 1, INT16_MAX, 1 }, REBOOT_REQUIRED },
+    { "DEBUG MODE",  OME_TAB,     NULL,            &(OSD_TAB_t)   { &systemConfig_debug_mode, DEBUG_COUNT - 1, debugModeNames }, REBOOT_REQUIRED },
 
 #ifdef USE_FLASHFS
-    { "ERASE FLASH", OME_Funcall, cmsx_EraseFlash, NULL,                                                      0 },
+    { "ERASE FLASH", OME_Submenu, cmsMenuChange,   &cmsx_menuEraseFlashCheck,                                 0 },
 #endif // USE_FLASHFS
 
     { "BACK", OME_Back, NULL, NULL, 0 },

@@ -108,6 +108,7 @@ COMMON_SRC = \
             rx/msp.c \
             rx/pwm.c \
             rx/rx.c \
+            rx/rx_bind.c \
             rx/rx_spi.c \
             rx/rx_spi_common.c \
             rx/crsf.c \
@@ -125,6 +126,7 @@ COMMON_SRC = \
             sensors/boardalignment.c \
             sensors/compass.c \
             sensors/gyro.c \
+            sensors/gyro_init.c \
             sensors/initialisation.c \
             blackbox/blackbox.c \
             blackbox/blackbox_encoding.c \
@@ -187,7 +189,7 @@ COMMON_SRC = \
             io/vtx_rtc6705.c \
             io/vtx_smartaudio.c \
             io/vtx_tramp.c \
-            io/vtx_control.c
+            io/vtx_control.c \
 
 COMMON_DEVICE_SRC = \
             $(CMSIS_SRC) \
@@ -216,12 +218,12 @@ SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
             common/filter.c \
             common/maths.c \
             common/typeconversion.c \
-            drivers/accgyro/accgyro_fake.c \
             drivers/accgyro/accgyro_mpu.c \
             drivers/accgyro/accgyro_mpu3050.c \
             drivers/accgyro/accgyro_mpu6050.c \
             drivers/accgyro/accgyro_mpu6500.c \
             drivers/accgyro/accgyro_spi_bmi160.c \
+            drivers/accgyro/accgyro_spi_bmi270.c \
             drivers/accgyro/accgyro_spi_icm20689.c \
             drivers/accgyro/accgyro_spi_mpu6000.c \
             drivers/accgyro/accgyro_spi_mpu6500.c \
@@ -277,6 +279,7 @@ SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             bus_bst_stm32f30x.c \
             cli/cli.c \
             cli/settings.c \
+            drivers/accgyro/accgyro_fake.c \
             drivers/barometer/barometer_bmp085.c \
             drivers/barometer/barometer_bmp280.c \
             drivers/barometer/barometer_fake.c \
@@ -345,7 +348,9 @@ SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             io/vtx_control.c \
             io/spektrum_vtx_control.c \
             osd/osd.c \
-            osd/osd_elements.c
+            osd/osd_elements.c \
+            rx/rx_bind.c \
+            sensors/gyro_init.c
 
 # F4 and F7 optimizations
 ifneq ($(TARGET),$(filter $(TARGET),$(F3_TARGETS)))
@@ -356,6 +361,9 @@ SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
             drivers/pwm_output_dshot.c \
             drivers/pwm_output_dshot_shared.c \
             drivers/pwm_output_dshot_hal.c
+
+SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
+            drivers/bus_i2c_hal_init.c
 endif #!F3
 endif #!F1
 

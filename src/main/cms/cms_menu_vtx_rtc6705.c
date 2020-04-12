@@ -60,7 +60,7 @@ static void cmsx_Vtx_ConfigRead(void)
     vtxCommonGetBandAndChannel(vtxCommonDevice(), &cmsx_vtxBand, &cmsx_vtxChannel);
     vtxCommonGetPowerIndex(vtxCommonDevice(), &cmsx_vtxPower);
     unsigned status;
-    if(vtxCommonGetStatus(vtxCommonDevice(), &status)){
+    if (vtxCommonGetStatus(vtxCommonDevice(), &status)) {
         cmsx_vtxPit = status & VTX_STATUS_PIT_MODE ? 2 : 1;
     } else {
         cmsx_vtxPit = 0;
@@ -78,8 +78,10 @@ static void cmsx_Vtx_ConfigWriteback(void)
     saveConfigAndNotify();
 }
 
-static const void *cmsx_Vtx_onEnter(void)
+static const void *cmsx_Vtx_onEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     cmsx_Vtx_ConfigRead();
 
     entryVtxBand.val = &cmsx_vtxBand;
@@ -97,8 +99,9 @@ static const void *cmsx_Vtx_onEnter(void)
     return NULL;
 }
 
-static const void *cmsx_Vtx_onExit(const OSD_Entry *self)
+static const void *cmsx_Vtx_onExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
     vtxCommonSetPitMode(vtxCommonDevice(), cmsx_vtxPit);

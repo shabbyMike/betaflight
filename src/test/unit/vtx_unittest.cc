@@ -22,9 +22,6 @@ extern "C" {
     #include "build/debug.h"
     #include "common/maths.h"
     #include "config/feature.h"
-    #include "pg/pg.h"
-    #include "pg/pg_ids.h"
-    #include "pg/rx.h"
     #include "config/config.h"
     #include "fc/controlrate_profile.h"
     #include "fc/core.h"
@@ -39,6 +36,10 @@ extern "C" {
     #include "io/beeper.h"
     #include "io/gps.h"
     #include "io/vtx.h"
+    #include "pg/motor.h"
+    #include "pg/pg.h"
+    #include "pg/pg_ids.h"
+    #include "pg/rx.h"
     #include "rx/rx.h"
     #include "scheduler/scheduler.h"
     #include "sensors/acceleration.h"
@@ -57,6 +58,7 @@ extern "C" {
     PG_REGISTER(systemConfig_t, systemConfig, PG_SYSTEM_CONFIG, 0);
     PG_REGISTER(telemetryConfig_t, telemetryConfig, PG_TELEMETRY_CONFIG, 0);
     PG_REGISTER(failsafeConfig_t, failsafeConfig, PG_FAILSAFE_CONFIG, 0);
+    PG_REGISTER(motorConfig_t, motorConfig, PG_MOTOR_CONFIG, 0);
 
     float rcCommand[4];
     int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
@@ -113,6 +115,7 @@ TEST(VtxTest, PitMode)
 
 // STUBS
 extern "C" {
+    uint8_t activePidLoopDenom = 1;
     uint32_t micros(void) { return simulationTime; }
     uint32_t millis(void) { return micros() / 1000; }
     bool rxIsReceivingSignal(void) { return simulationHaveRx; }
@@ -141,8 +144,8 @@ extern "C" {
     void writeServos(void) {};
     bool calculateRxChannelsAndUpdateFailsafe(timeUs_t) { return true; }
     bool isMixerUsingServos(void) { return false; }
-    void gyroUpdate(timeUs_t) {}
-    timeDelta_t getTaskDeltaTime(cfTaskId_e) { return 0; }
+    void gyroUpdate() {}
+    timeDelta_t getTaskDeltaTimeUs(taskId_e) { return 0; }
     void updateRSSI(timeUs_t) {}
     bool failsafeIsMonitoring(void) { return false; }
     void failsafeStartMonitoring(void) {}
@@ -172,7 +175,7 @@ extern "C" {
     void dashboardEnablePageCycling(void) {}
     void dashboardDisablePageCycling(void) {}
     bool imuQuaternionHeadfreeOffsetSet(void) { return true; }
-    void rescheduleTask(cfTaskId_e, uint32_t) {}
+    void rescheduleTask(taskId_e, timeDelta_t) {}
     bool usbCableIsInserted(void) { return false; }
     bool usbVcpIsConnected(void) { return false; }
     void pidSetAntiGravityState(bool newState) { UNUSED(newState); }
@@ -183,4 +186,10 @@ extern "C" {
     void compassStartCalibration(void) {}
     bool compassIsCalibrationComplete(void) { return true; }
     bool isUpright(void) { return true; }
+    void blackboxLogEvent(FlightLogEvent, union flightLogEventData_u *) {};
+    void gyroFiltering(timeUs_t) {};
+    timeDelta_t rxGetFrameDelta(timeDelta_t *) { return 0; }
+    void updateRcRefreshRate(timeUs_t) {};
+    uint16_t getAverageSystemLoadPercent(void) { return 0; }
+    bool isMotorProtocolEnabled(void) { return false; }
 }

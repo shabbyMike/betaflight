@@ -43,8 +43,10 @@
 #include "drivers/accgyro/accgyro_mpu6050.h"
 #include "drivers/accgyro/accgyro_mpu6500.h"
 #include "drivers/accgyro/accgyro_spi_bmi160.h"
+#include "drivers/accgyro/accgyro_spi_bmi270.h"
 #include "drivers/accgyro/accgyro_spi_icm20649.h"
 #include "drivers/accgyro/accgyro_spi_icm20689.h"
+#include "drivers/accgyro/accgyro_spi_icm42605.h"
 #include "drivers/accgyro/accgyro_spi_mpu6000.h"
 #include "drivers/accgyro/accgyro_spi_mpu6500.h"
 #include "drivers/accgyro/accgyro_spi_mpu9250.h"
@@ -78,6 +80,7 @@
 
 #include "sensors/boardalignment.h"
 #include "sensors/gyro.h"
+#include "sensors/gyro_init.h"
 #include "sensors/sensors.h"
 
 #include "acceleration.h"
@@ -273,10 +276,28 @@ retry:
         FALLTHROUGH;
 #endif
 
+#ifdef USE_ACC_SPI_ICM42605
+    case ACC_ICM42605:
+        if (icm42605SpiAccDetect(dev)) {
+            accHardware = ACC_ICM42605;
+            break;
+        }
+        FALLTHROUGH;
+#endif
+
 #ifdef USE_ACCGYRO_BMI160
     case ACC_BMI160:
         if (bmi160SpiAccDetect(dev)) {
             accHardware = ACC_BMI160;
+            break;
+        }
+        FALLTHROUGH;
+#endif
+
+#ifdef USE_ACCGYRO_BMI270
+    case ACC_BMI270:
+        if (bmi270SpiAccDetect(dev)) {
+            accHardware = ACC_BMI270;
             break;
         }
         FALLTHROUGH;
@@ -313,7 +334,20 @@ retry:
     return true;
 }
 
-bool accInit(uint32_t gyroSamplingInverval)
+void accInitFilters(void)
+{
+    // Only set the lowpass cutoff if the ACC sample rate is detected otherwise
+    // the filter initialization is not defined (sample rate = 0)
+    accLpfCutHz = (acc.sampleRateHz) ? accelerometerConfig()->acc_lpf_hz : 0;
+    if (accLpfCutHz) {
+        const uint32_t accSampleTimeUs = 1e6 / acc.sampleRateHz;
+        for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+            biquadFilterInitLPF(&accFilter[axis], accLpfCutHz, accSampleTimeUs);
+        }
+    }
+}
+
+bool accInit(uint16_t accSampleRateHz)
 {
     memset(&acc, 0, sizeof(acc));
     // copy over the common gyro mpu settings
@@ -330,7 +364,7 @@ bool accInit(uint32_t gyroSamplingInverval)
 #ifdef USE_MULTI_GYRO
     if (gyroConfig()->gyro_to_use == GYRO_CONFIG_USE_GYRO_2) {
         alignment = gyroDeviceConfig(1)->alignment;
-    
+
         customAlignment = &gyroDeviceConfig(1)->customAlignment;
     }
 #endif
@@ -343,23 +377,9 @@ bool accInit(uint32_t gyroSamplingInverval)
     acc.dev.acc_1G = 256; // set default
     acc.dev.initFn(&acc.dev); // driver initialisation
     acc.dev.acc_1G_rec = 1.0f / acc.dev.acc_1G;
-    // set the acc sampling interval according to the gyro sampling interval
-    switch (gyroSamplingInverval) {  // Switch statement kept in place to change acc sampling interval in the future
-    case 500:
-    case 375:
-    case 250:
-    case 125:
-        acc.accSamplingInterval = 1000;
-        break;
-    case 1000:
-    default:
-        acc.accSamplingInterval = 1000;
-    }
-    if (accLpfCutHz) {
-        for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            biquadFilterInitLPF(&accFilter[axis], accLpfCutHz, acc.accSamplingInterval);
-        }
-    }
+
+    acc.sampleRateHz = accSampleRateHz;
+    accInitFilters();
     return true;
 }
 
@@ -540,16 +560,6 @@ bool accGetAccumulationAverage(float *accumulationAverage)
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse)
 {
     accelerationTrims = accelerationTrimsToUse;
-}
-
-void accInitFilters(void)
-{
-    accLpfCutHz = accelerometerConfig()->acc_lpf_hz;
-    if (acc.accSamplingInterval) {
-        for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            biquadFilterInitLPF(&accFilter[axis], accLpfCutHz, acc.accSamplingInterval);
-        }
-    }
 }
 
 void applyAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)

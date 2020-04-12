@@ -164,6 +164,7 @@
 #include "sensors/compass.h"
 #include "sensors/esc_sensor.h"
 #include "sensors/gyro.h"
+#include "sensors/gyro_init.h"
 #include "sensors/initialisation.h"
 
 #include "telemetry/telemetry.h"
@@ -285,12 +286,24 @@ static void configureSPIAndQuadSPI(void)
 }
 
 #ifdef USE_SDCARD
-void sdCardAndFSInit()
+static void sdCardAndFSInit()
 {
     sdcard_init(sdcardConfig());
     afatfs_init();
 }
 #endif
+
+static void swdPinsInit(void)
+{
+    IO_t io = IOGetByTag(DEFIO_TAG_E(PA13)); // SWDIO
+    if (IOGetOwner(io) == OWNER_FREE) {
+        IOInit(io, OWNER_SWD, 0);
+    }
+    io = IOGetByTag(DEFIO_TAG_E(PA14)); // SWCLK
+    if (IOGetOwner(io) == OWNER_FREE) {
+        IOInit(io, OWNER_SWD, 0);
+    }
+}
 
 void init(void)
 {
@@ -527,8 +540,19 @@ void init(void)
 
     // Configure MCO output after config is stable
 #ifdef USE_MCO
-    mcoInit(mcoConfig());
+    // Note that mcoConfigure must be augmented with an additional argument to
+    // indicate which device instance to configure when MCO and MCO2 are both supported
+
+#if defined(STM32F4) || defined(STM32F7)
+    // F4 and F7 support MCO on PA8 and MCO2 on PC9, but only MCO2 is supported for now
+    mcoConfigure(MCODEV_2, mcoConfig(MCODEV_2));
+#elif defined(STM32G4)
+    // G4 only supports one MCO on PA8
+    mcoConfigure(MCODEV_1, mcoConfig(MCODEV_1));
+#else
+#error Unsupported MCU
 #endif
+#endif // USE_MCO
 
 #ifdef USE_TIMER
     timerInit();  // timer must be initialized before any channel is allocated
@@ -538,7 +562,7 @@ void init(void)
     busSwitchInit();
 #endif
 
-#if defined(USE_UART)
+#if defined(USE_UART) && !defined(SIMULATOR_BUILD)
     uartPinConfigure(serialPinConfig());
 #endif
 
@@ -712,13 +736,19 @@ void init(void)
 
     systemState |= SYSTEM_STATE_SENSORS_READY;
 
-    // gyro.targetLooptime set in sensorsAutodetect(),
-    // so we are ready to call validateAndFixGyroConfig(), pidInit(), and setAccelerationFilter()
+    // Set the targetLooptime based on the detected gyro sampleRateHz and pid_process_denom
+    gyroSetTargetLooptime(pidConfig()->pid_process_denom);
+
+    // Validate and correct the gyro config or PID loop time if needed
     validateAndFixGyroConfig();
+
+    // Now reset the targetLooptime as it's possible for the validation to change the pid_process_denom
+    gyroSetTargetLooptime(pidConfig()->pid_process_denom);
+
+    // Finally initialize the gyro filtering
+    gyroInitFilters();
+
     pidInit(currentPidProfile);
-#ifdef USE_ACC
-    accInitFilters();
-#endif
 
 #ifdef USE_PID_AUDIO
     pidAudioInit();
@@ -889,25 +919,9 @@ void init(void)
 
     batteryInit(); // always needs doing, regardless of features.
 
-#ifdef USE_DASHBOARD
-    if (featureIsEnabled(FEATURE_DASHBOARD)) {
-#ifdef USE_OLED_GPS_DEBUG_PAGE_ONLY
-        dashboardShowFixedPage(PAGE_GPS);
-#else
-        dashboardResetPageCycling();
-        dashboardEnablePageCycling();
-#endif
-    }
-#endif
-
 #ifdef USE_RCDEVICE
     rcdeviceInit();
 #endif // USE_RCDEVICE
-
-#ifdef USE_MOTOR
-    motorPostInit();
-    motorEnable();
-#endif
 
 #ifdef USE_PERSISTENT_STATS
     statsInit();
@@ -926,6 +940,7 @@ void init(void)
 
 #if (defined(USE_OSD) || (defined(USE_MSP_DISPLAYPORT) && defined(USE_CMS)))
     displayPort_t *osdDisplayPort = NULL;
+    osdDisplayPortDevice_e osdDisplayPortDevice = OSD_DISPLAYPORT_DEVICE_NONE;
 #endif
 
 #if defined(USE_OSD)
@@ -946,6 +961,7 @@ void init(void)
         case OSD_DISPLAYPORT_DEVICE_FRSKYOSD:
             osdDisplayPort = frskyOsdDisplayPortInit(vcdProfile()->video_system);
             if (osdDisplayPort || device == OSD_DISPLAYPORT_DEVICE_FRSKYOSD) {
+                osdDisplayPortDevice = OSD_DISPLAYPORT_DEVICE_FRSKYOSD;
                 break;
             }
             FALLTHROUGH;
@@ -956,6 +972,7 @@ void init(void)
             // If there is a max7456 chip for the OSD configured and detectd then use it.
             osdDisplayPort = max7456DisplayPortInit(vcdProfile());
             if (osdDisplayPort || device == OSD_DISPLAYPORT_DEVICE_MAX7456) {
+                osdDisplayPortDevice = OSD_DISPLAYPORT_DEVICE_MAX7456;
                 break;
             }
             FALLTHROUGH;
@@ -965,6 +982,7 @@ void init(void)
         case OSD_DISPLAYPORT_DEVICE_MSP:
             osdDisplayPort = displayPortMspInit();
             if (osdDisplayPort || device == OSD_DISPLAYPORT_DEVICE_MSP) {
+                osdDisplayPortDevice = OSD_DISPLAYPORT_DEVICE_MSP;
                 break;
             }
             FALLTHROUGH;
@@ -978,7 +996,7 @@ void init(void)
         }
 
         // osdInit will register with CMS by itself.
-        osdInit(osdDisplayPort);
+        osdInit(osdDisplayPort, osdDisplayPortDevice);
     }
 #endif // USE_OSD
 
@@ -992,6 +1010,12 @@ void init(void)
     // Dashbord will register with CMS by itself.
     if (featureIsEnabled(FEATURE_DASHBOARD)) {
         dashboardInit();
+#ifdef USE_OLED_GPS_DEBUG_PAGE_ONLY
+        dashboardShowFixedPage(PAGE_GPS);
+#else
+        dashboardResetPageCycling();
+        dashboardEnablePageCycling();
+#endif
     }
 #endif
 
@@ -1001,6 +1025,15 @@ void init(void)
 #endif
 
     setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
+
+#ifdef USE_MOTOR
+    motorPostInit();
+    motorEnable();
+#endif
+
+    swdPinsInit();
+
+    unusedPinsInit();
 
     tasksInit();
 

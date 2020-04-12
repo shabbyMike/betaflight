@@ -81,6 +81,7 @@ typedef struct mixerConfig_s {
     uint8_t mixerMode;
     bool yaw_motors_reversed;
     uint8_t crashflip_motor_percent;
+    uint8_t crashflip_expo;
 } mixerConfig_t;
 
 PG_DECLARE(mixerConfig_t, mixerConfig);
@@ -100,6 +101,7 @@ bool areMotorsRunning(void);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
 void initEscEndpoints(void);
 void mixerInit(mixerMode_e mixerMode);
+void mixerInitProfile(void);
 
 void mixerConfigureOutput(void);
 

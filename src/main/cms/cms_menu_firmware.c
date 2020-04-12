@@ -65,8 +65,9 @@ static char accCalibrationStatus[CALIBRATION_STATUS_MAX_LENGTH];
 static char baroCalibrationStatus[CALIBRATION_STATUS_MAX_LENGTH];
 #endif
 
-static const void *cmsx_CalibrationOnDisplayUpdate(const OSD_Entry *selected)
+static const void *cmsx_CalibrationOnDisplayUpdate(displayPort_t *pDisp, const OSD_Entry *selected)
 {
+    UNUSED(pDisp);
     UNUSED(selected);
 
     tfp_sprintf(gyroCalibrationStatus, sensors(SENSOR_GYRO) ? gyroIsCalibrationComplete() ? CALIBRATION_STATUS_OK : CALIBRATION_STATUS_WAIT: CALIBRATION_STATUS_OFF);
@@ -102,7 +103,7 @@ static const void *cmsCalibrateAcc(displayPort_t *pDisp, const void *self)
         accStartCalibration();
     }
 
-    return NULL;
+    return MENU_CHAIN_BACK;
 }
 #endif
 
@@ -120,11 +121,46 @@ static const void *cmsCalibrateBaro(displayPort_t *pDisp, const void *self)
 }
 #endif
 
+#if defined(USE_ACC)
+static const OSD_Entry menuCalibrateAccEntries[] = {
+    { "--- CALIBRATE ACC ---", OME_Label, NULL, NULL, 0 },
+    { "PLACE ON A LEVEL SURFACE", OME_Label, NULL, NULL, 0},
+    { "MAKE SURE CRAFT IS STILL", OME_Label, NULL, NULL, 0},
+    { " ", OME_Label, NULL, NULL, 0},
+    { "START CALIBRATION",  OME_Funcall, cmsCalibrateAcc, NULL, 0 },
+    { "BACK", OME_Back, NULL, NULL, 0 },
+    { NULL, OME_END, NULL, NULL, 0 }
+};
+
+CMS_Menu cmsx_menuCalibrateAcc = {
+#ifdef CMS_MENU_DEBUG
+    .GUARD_text = "ACCCALIBRATION",
+    .GUARD_type = OME_MENU,
+#endif
+    .onEnter = NULL,
+    .onExit = NULL,
+    .onDisplayUpdate = NULL,
+    .entries = menuCalibrateAccEntries
+};
+
+const void *cmsCalibrateAccMenu(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(self);
+
+    if (sensors(SENSOR_ACC)) {
+        cmsMenuChange(pDisp, &cmsx_menuCalibrateAcc);
+    }
+
+    return NULL;
+}
+
+#endif
+
 static const OSD_Entry menuCalibrationEntries[] = {
     { "--- CALIBRATE ---", OME_Label, NULL, NULL, 0 },
     { "GYRO", OME_Funcall, cmsCalibrateGyro, gyroCalibrationStatus, DYNAMIC },
 #if defined(USE_ACC)
-    { "ACC",  OME_Funcall, cmsCalibrateAcc, accCalibrationStatus, DYNAMIC },
+    { "ACC",  OME_Funcall, cmsCalibrateAccMenu, accCalibrationStatus, DYNAMIC },
 #endif
 #if defined(USE_BARO)
     { "BARO", OME_Funcall, cmsCalibrateBaro, baroCalibrationStatus, DYNAMIC },
@@ -149,8 +185,10 @@ static CMS_Menu cmsx_menuCalibration = {
 static char infoGitRev[GIT_SHORT_REVISION_LENGTH + 1];
 static char infoTargetName[] = __TARGET__;
 
-static const void *cmsx_FirmwareInit(void)
+static const void *cmsx_FirmwareInit(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     unsigned i;
     for (i = 0 ; i < GIT_SHORT_REVISION_LENGTH ; i++) {
         if (shortGitRevision[i] >= 'a' && shortGitRevision[i] <= 'f') {

@@ -43,8 +43,10 @@
 static char statusLine1[MAX_STATUS_LINE_LENGTH] = "";
 static char statusLine2[MAX_STATUS_LINE_LENGTH] = "";
 
-static const void *setStatusMessage(void)
+static const void *setStatusMessage(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     vtxDevice_t *device = vtxCommonDevice();
 
     statusLine1[0] = 0;
@@ -97,7 +99,7 @@ const void *cmsSelectVtx(displayPort_t *pDisplay, const void *ptr)
         vtxDevType_e vtxType = vtxCommonGetDeviceType(device);
 
         switch (vtxType) {
-        
+
 #if defined(USE_VTX_RTC6705)
         case VTXDEV_RTC6705:
             cmsMenuChange(pDisplay, &cmsx_menuVtxRTC6705);

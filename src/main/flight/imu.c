@@ -178,7 +178,7 @@ void imuConfigure(uint16_t throttle_correction_angle, uint8_t throttle_correctio
 
     fc_acc = calculateAccZLowPassFilterRCTimeConstant(5.0f); // Set to fix value
     throttleAngleScale = calculateThrottleAngleScale(throttle_correction_angle);
-    
+
     throttleAngleValue = throttle_correction_value;
 }
 
@@ -216,7 +216,7 @@ static float invSqrt(float x)
 
 static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
                                 bool useAcc, float ax, float ay, float az,
-                                bool useMag, float mx, float my, float mz,
+                                bool useMag,
                                 bool useCOG, float courseOverGround, const float dcmKpGain)
 {
     static float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;    // integral error terms scaled by Ki
@@ -244,6 +244,9 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
 
 #ifdef USE_MAG
     // Use measured magnetic field vector
+    float mx = mag.magADC[X];
+    float my = mag.magADC[Y];
+    float mz = mag.magADC[Z];
     float recipMagNorm = sq(mx) + sq(my) + sq(mz);
     if (useMag && recipMagNorm > 0.01f) {
         // Normalise magnetometer measurement
@@ -271,9 +274,6 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
     }
 #else
     UNUSED(useMag);
-    UNUSED(mx);
-    UNUSED(my);
-    UNUSED(mz);
 #endif
 
     // Use measured acceleration vector
@@ -440,6 +440,7 @@ static float imuCalcKpGain(timeUs_t currentTimeUs, bool useAcc, float *gyroAvera
     return ret;
 }
 
+#if defined(USE_GPS)
 static void imuComputeQuaternionFromRPY(quaternionProducts *quatProd, int16_t initialRoll, int16_t initialPitch, int16_t initialYaw)
 {
     if (initialRoll > 1800) {
@@ -484,6 +485,7 @@ static void imuComputeQuaternionFromRPY(quaternionProducts *quatProd, int16_t in
 
     attitudeIsEstablished = true;
 }
+#endif
 
 static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 {
@@ -553,7 +555,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     imuMahonyAHRSupdate(deltaT * 1e-6f,
                         DEGREES_TO_RADIANS(gyroAverage[X]), DEGREES_TO_RADIANS(gyroAverage[Y]), DEGREES_TO_RADIANS(gyroAverage[Z]),
                         useAcc, accAverage[X], accAverage[Y], accAverage[Z],
-                        useMag, mag.magADC[X], mag.magADC[Y], mag.magADC[Z],
+                        useMag,
                         useCOG, courseOverGround,  imuCalcKpGain(currentTimeUs, useAcc, gyroAverage));
 
     imuUpdateEulerAngles();
@@ -589,7 +591,7 @@ void imuUpdateAttitude(timeUs_t currentTimeUs)
 #endif
         imuCalculateEstimatedAttitude(currentTimeUs);
         IMU_UNLOCK;
-        
+
         // Update the throttle correction for angle and supply it to the mixer
         int throttleAngleCorrection = 0;
         if (throttleAngleValue && (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) && ARMING_FLAG(ARMED)) {

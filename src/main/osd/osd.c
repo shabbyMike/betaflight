@@ -80,6 +80,7 @@
 #include "pg/pg_ids.h"
 #include "pg/stats.h"
 
+#include "rx/crsf.h"
 #include "rx/rx.h"
 
 #include "sensors/acceleration.h"
@@ -126,6 +127,7 @@ static uint8_t armState;
 static uint8_t osdProfile = 1;
 #endif
 static displayPort_t *osdDisplayPort;
+static osdDisplayPortDevice_e osdDisplayPortDevice;
 static bool osdIsReady;
 
 static bool suppressStatsDisplay = false;
@@ -139,7 +141,9 @@ escSensorData_t *osdEscDataCombined;
 
 STATIC_ASSERT(OSD_POS_MAX == OSD_POS(31,31), OSD_POS_MAX_incorrect);
 
-PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 6);
+PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 8);
+
+PG_REGISTER_WITH_RESET_FN(osdElementConfig_t, osdElementConfig, PG_OSD_ELEMENT_CONFIG, 0);
 
 // Controls the display order of the OSD post-flight statistics.
 // Adjust the ordering here to control how the post-flight stats are presented.
@@ -270,24 +274,6 @@ const uint16_t osdTimerDefault[OSD_TIMER_COUNT] = {
 
 void pgResetFn_osdConfig(osdConfig_t *osdConfig)
 {
-    // Position elements near centre of screen and disabled by default
-    for (int i = 0; i < OSD_ITEM_COUNT; i++) {
-        osdConfig->item_pos[i] = OSD_POS(10, 7);
-    }
-
-    // Always enable warnings elements by default
-    uint16_t profileFlags = 0;
-    for (unsigned i = 1; i <= OSD_PROFILE_COUNT; i++) {
-        profileFlags |= OSD_PROFILE_FLAG(i);
-    }
-    osdConfig->item_pos[OSD_WARNINGS] = OSD_POS(9, 10) | profileFlags;
-
-    // Default to old fixed positions for these elements
-    osdConfig->item_pos[OSD_CROSSHAIRS]         = OSD_POS(13, 6);
-    osdConfig->item_pos[OSD_ARTIFICIAL_HORIZON] = OSD_POS(14, 2);
-    osdConfig->item_pos[OSD_HORIZON_SIDEBARS]   = OSD_POS(14, 6);
-    osdConfig->item_pos[OSD_CAMERA_FRAME]       = OSD_POS(3, 1);
-
     // Enable the default stats
     osdConfig->enabled_stats = 0; // reset all to off and enable only a few initially
     osdStatSetState(OSD_STAT_MAX_SPEED, true);
@@ -309,6 +295,8 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     osdWarnSetState(OSD_WARNING_RSSI, false);
     osdWarnSetState(OSD_WARNING_LINK_QUALITY, false);
     osdWarnSetState(OSD_WARNING_RSSI_DBM, false);
+    // turn off the over mah capacity warning
+    osdWarnSetState(OSD_WARNING_OVER_CAP, false);
 
     osdConfig->timers[OSD_TIMER_1] = osdTimerDefault[OSD_TIMER_1];
     osdConfig->timers[OSD_TIMER_2] = osdTimerDefault[OSD_TIMER_2];
@@ -332,7 +320,7 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     for (int i=0; i < OSD_PROFILE_COUNT; i++) {
         osdConfig->profile[i][0] = '\0';
     }
-    osdConfig->rssi_dbm_alarm = 60;
+    osdConfig->rssi_dbm_alarm = -60;
     osdConfig->gps_sats_show_hdop = false;
 
     for (int i = 0; i < OSD_RCCHANNELS_COUNT; i++) {
@@ -347,6 +335,27 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
 
     osdConfig->camera_frame_width = 24;
     osdConfig->camera_frame_height = 11;
+}
+
+void pgResetFn_osdElementConfig(osdElementConfig_t *osdElementConfig)
+{
+    // Position elements near centre of screen and disabled by default
+    for (int i = 0; i < OSD_ITEM_COUNT; i++) {
+        osdElementConfig->item_pos[i] = OSD_POS(10, 7);
+    }
+
+    // Always enable warnings elements by default
+    uint16_t profileFlags = 0;
+    for (unsigned i = 1; i <= OSD_PROFILE_COUNT; i++) {
+        profileFlags |= OSD_PROFILE_FLAG(i);
+    }
+    osdElementConfig->item_pos[OSD_WARNINGS] = OSD_POS(9, 10) | profileFlags;
+
+    // Default to old fixed positions for these elements
+    osdElementConfig->item_pos[OSD_CROSSHAIRS]         = OSD_POS(13, 6);
+    osdElementConfig->item_pos[OSD_ARTIFICIAL_HORIZON] = OSD_POS(14, 2);
+    osdElementConfig->item_pos[OSD_HORIZON_SIDEBARS]   = OSD_POS(14, 6);
+    osdElementConfig->item_pos[OSD_CAMERA_FRAME]       = OSD_POS(3, 1);
 }
 
 static void osdDrawLogo(int x, int y)
@@ -403,13 +412,14 @@ static void osdCompleteInitialization(void)
     osdIsReady = true;
 }
 
-void osdInit(displayPort_t *osdDisplayPortToUse)
+void osdInit(displayPort_t *osdDisplayPortToUse, osdDisplayPortDevice_e displayPortDeviceToUse)
 {
     if (!osdDisplayPortToUse) {
         return;
     }
 
     osdDisplayPort = osdDisplayPortToUse;
+    osdDisplayPortDevice = displayPortDeviceToUse;
 #ifdef USE_CMS
     cmsDisplayPortRegister(osdDisplayPort);
 #endif
@@ -438,7 +448,7 @@ static void osdResetStats(void)
     stats.max_esc_temp = 0;
     stats.max_esc_rpm  = 0;
     stats.min_link_quality =  (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) ? 300 : 99; // CRSF  : percent
-    stats.min_rssi_dbm = 0;
+    stats.min_rssi_dbm = CRSF_SNR_MAX;
 }
 
 static void osdUpdateStats(void)
@@ -491,7 +501,7 @@ static void osdUpdateStats(void)
 
 #ifdef USE_RX_RSSI_DBM
     value = getRssiDbm();
-    if (stats.min_rssi_dbm < value) {
+    if (stats.min_rssi_dbm > value) {
         stats.min_rssi_dbm = value;
     }
 #endif
@@ -751,7 +761,7 @@ static bool osdDisplayStat(int statistic, uint8_t displayRow)
 
 #ifdef USE_RX_RSSI_DBM
     case OSD_STAT_MIN_RSSI_DBM:
-        tfp_sprintf(buff, "%3d", stats.min_rssi_dbm * -1);
+        tfp_sprintf(buff, "%3d", stats.min_rssi_dbm);
         osdDisplayStatisticLabel(displayRow, "MIN RSSI DBM", buff);
         return true;
 #endif
@@ -870,7 +880,7 @@ STATIC_UNIT_TESTED void osdRefresh(timeUs_t currentTimeUs)
         } else if (isSomeStatEnabled()
                    && !suppressStatsDisplay
                    && (!(getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))
-                       || !VISIBLE(osdConfig()->item_pos[OSD_WARNINGS]))) { // suppress stats if runaway takeoff triggered disarm and WARNINGS element is visible
+                       || !VISIBLE(osdElementConfig()->item_pos[OSD_WARNINGS]))) { // suppress stats if runaway takeoff triggered disarm and WARNINGS element is visible
             osdStatsEnabled = true;
             resumeRefreshAt = currentTimeUs + (60 * REFRESH_1S);
             stats.end_voltage = getBatteryVoltage();
@@ -935,7 +945,7 @@ STATIC_UNIT_TESTED void osdRefresh(timeUs_t currentTimeUs)
 
 #if defined(USE_ACC)
     if (sensors(SENSOR_ACC)
-       && (VISIBLE(osdConfig()->item_pos[OSD_G_FORCE]) || osdStatGetState(OSD_STAT_MAX_G_FORCE))) {
+       && (VISIBLE(osdElementConfig()->item_pos[OSD_G_FORCE]) || osdStatGetState(OSD_STAT_MAX_G_FORCE))) {
             // only calculate the G force if the element is visible or the stat is enabled
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
             const float a = accAverage[axis];
@@ -1037,8 +1047,11 @@ bool osdNeedsAccelerometer(void)
 }
 #endif // USE_ACC
 
-displayPort_t *osdGetDisplayPort(void)
+displayPort_t *osdGetDisplayPort(osdDisplayPortDevice_e *displayPortDevice)
 {
+    if (displayPortDevice) {
+        *displayPortDevice = osdDisplayPortDevice;
+    }
     return osdDisplayPort;
 }
 

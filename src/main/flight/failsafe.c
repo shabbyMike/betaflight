@@ -137,7 +137,7 @@ static void failsafeActivate(void)
     failsafeState.active = true;
 
     failsafeState.phase = FAILSAFE_LANDING;
-    
+
     ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
     failsafeState.landingShouldBeFinishedAt = millis() + failsafeConfig()->failsafe_off_delay * MILLIS_PER_TENTH_SECOND;
 
@@ -233,7 +233,7 @@ void failsafeUpdateState(void)
                         failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_1_SECONDS;    // require 1 seconds of valid rxData
                         reprocessState = true;
                     } else if (!receivingRxData) {
-                        if (millis() > failsafeState.throttleLowPeriod 
+                        if (millis() > failsafeState.throttleLowPeriod
 #ifdef USE_GPS_RESCUE
                             && failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE
 #endif
@@ -320,7 +320,7 @@ void failsafeUpdateState(void)
 #endif
             case FAILSAFE_LANDED:
                 setArmingDisabled(ARMING_DISABLED_FAILSAFE); // To prevent accidently rearming by an intermittent rx link
-                disarm();
+                disarm(DISARM_REASON_FAILSAFE);
                 failsafeState.receivingRxDataPeriod = millis() + failsafeState.receivingRxDataPeriodPreset; // set required period of valid rxData
                 failsafeState.phase = FAILSAFE_RX_LOSS_MONITORING;
                 reprocessState = true;

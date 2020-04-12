@@ -109,7 +109,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PB6),  GPIO_AF4_USART1 },
             { DEFIO_TAG_E(PB14), GPIO_AF4_USART1 },
         },
-        .rcc_apb2 = RCC_APB2(USART1),
+        .rcc = RCC_APB2(USART1),
         .rxIrq = USART1_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART1_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART1,
@@ -138,7 +138,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PA2), GPIO_AF7_USART2 },
             { DEFIO_TAG_E(PD5), GPIO_AF7_USART2 }
         },
-        .rcc_apb1 = RCC_APB1L(USART2),
+        .rcc = RCC_APB1L(USART2),
         .rxIrq = USART2_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART2_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART2,
@@ -169,7 +169,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PC10), GPIO_AF7_USART3 },
             { DEFIO_TAG_E(PD8), GPIO_AF7_USART3 }
         },
-        .rcc_apb1 = RCC_APB1L(USART3),
+        .rcc = RCC_APB1L(USART3),
         .rxIrq = USART3_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART3_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART3,
@@ -194,17 +194,17 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PA1),  GPIO_AF8_UART4 },
             { DEFIO_TAG_E(PA11), GPIO_AF6_UART4 },
             { DEFIO_TAG_E(PB8),  GPIO_AF8_UART4 },
-            { DEFIO_TAG_E(PC11), GPIO_AF8_UART4 },         
+            { DEFIO_TAG_E(PC11), GPIO_AF8_UART4 },
             { DEFIO_TAG_E(PD0),  GPIO_AF8_UART4 }
         },
         .txPins = {
             { DEFIO_TAG_E(PA0),  GPIO_AF8_UART4 },
             { DEFIO_TAG_E(PA12), GPIO_AF6_UART4 },
             { DEFIO_TAG_E(PB9),  GPIO_AF8_UART4 },
-            { DEFIO_TAG_E(PC10), GPIO_AF8_UART4 },         
+            { DEFIO_TAG_E(PC10), GPIO_AF8_UART4 },
             { DEFIO_TAG_E(PD1),  GPIO_AF8_UART4 }
         },
-        .rcc_apb1 = RCC_APB1L(UART4),
+        .rcc = RCC_APB1L(UART4),
         .rxIrq = UART4_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART4_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART4,
@@ -235,7 +235,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PB13), GPIO_AF14_UART5 },
             { DEFIO_TAG_E(PC12), GPIO_AF8_UART5 },
         },
-        .rcc_apb1 = RCC_APB1L(UART5),
+        .rcc = RCC_APB1L(UART5),
         .rxIrq = UART5_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART5_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART5,
@@ -264,7 +264,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PC6), GPIO_AF7_USART6 },
             { DEFIO_TAG_E(PG14), GPIO_AF7_USART6 }
         },
-        .rcc_apb2 = RCC_APB2(USART6),
+        .rcc = RCC_APB2(USART6),
         .rxIrq = USART6_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART6_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART6,
@@ -297,7 +297,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
             { DEFIO_TAG_E(PE8),  GPIO_AF7_UART7 },
             { DEFIO_TAG_E(PF7),  GPIO_AF7_UART7 },
         },
-        .rcc_apb1 = RCC_APB1L(UART7),
+        .rcc = RCC_APB1L(UART7),
         .rxIrq = UART7_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART7_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART7,
@@ -324,7 +324,7 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
         .txPins = {
             { DEFIO_TAG_E(PE1), GPIO_AF8_UART8 }
         },
-        .rcc_apb1 = RCC_APB1L(UART8),
+        .rcc = RCC_APB1L(UART8),
         .rxIrq = UART8_IRQn,
         .txPriority = NVIC_PRIO_SERIALUART8_TXDMA,
         .rxPriority = NVIC_PRIO_SERIALUART8,
@@ -332,6 +332,36 @@ const uartHardware_t uartHardware[UARTDEV_COUNT] = {
         .rxBuffer = uart8RxBuffer,
         .txBufferSize = sizeof(uart8TxBuffer),
         .rxBufferSize = sizeof(uart8RxBuffer),
+    },
+#endif
+
+#ifdef USE_UART9
+    // On H7, UART9 is implemented with LPUART1
+    {
+        .device = UARTDEV_9,
+        .reg = LPUART1,
+#ifdef USE_DMA
+        .rxDMAChannel = BDMA_REQUEST_LPUART1_RX,
+        .rxDMAResource = (dmaResource_t *)NULL, // No DMA support yet (Need BDMA support)
+        .txDMAChannel = BDMA_REQUEST_LPUART1_TX,
+        .txDMAResource = (dmaResource_t *)NULL, // No DMA support yet (Need BDMA support)
+#endif
+        .rxPins = {
+            { DEFIO_TAG_E(PA10), GPIO_AF3_LPUART },
+            { DEFIO_TAG_E(PB7),  GPIO_AF8_LPUART }
+        },
+        .txPins = {
+            { DEFIO_TAG_E(PA9),  GPIO_AF3_LPUART },
+            { DEFIO_TAG_E(PB6),  GPIO_AF8_LPUART }
+        },
+        .rcc = RCC_APB4(LPUART1),
+        .rxIrq = LPUART1_IRQn,
+        .txPriority = NVIC_PRIO_SERIALUART8_TXDMA, // Not used until DMA is supported
+        .rxPriority = NVIC_PRIO_SERIALUART8,       // Not used until DMA is supported
+        .txBuffer = uart9TxBuffer,
+        .rxBuffer = uart9RxBuffer,
+        .txBufferSize = sizeof(uart9TxBuffer),
+        .rxBufferSize = sizeof(uart9RxBuffer),
     },
 #endif
 };
@@ -365,6 +395,10 @@ uartPort_t *serialUART(UARTDevice_e device, uint32_t baudRate, portMode_e mode, 
 #endif
 
     s->Handle.Instance = hardware->reg;
+
+    if (hardware->rcc) {
+        RCC_ClockCmd(hardware->rcc, ENABLE);
+    }
 
     IO_t txIO = IOGetByTag(uartdev->tx.pin);
     IO_t rxIO = IOGetByTag(uartdev->rx.pin);

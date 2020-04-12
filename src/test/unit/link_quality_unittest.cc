@@ -89,7 +89,6 @@ extern "C" {
 
     void osdRefresh(timeUs_t currentTimeUs);
     uint16_t updateLinkQualitySamples(uint16_t value);
-    uint16_t scaleCrsfLq(uint16_t lqvalue);
 #define LINK_QUALITY_SAMPLE_COUNT 16
 }
 
@@ -200,7 +199,7 @@ TEST(LQTest, TestInit)
 
     // when
     // OSD is initialised
-    osdInit(&testDisplayPort);
+    osdInit(&testDisplayPort, OSD_DISPLAYPORT_DEVICE_AUTO);
 
     // then
     // display buffer should contain splash screen
@@ -230,7 +229,7 @@ TEST(LQTest, TestElement_LQ_SOURCE_NONE_SAMPLES)
 
     linkQualitySource = LQ_SOURCE_NONE;
 
-    osdConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1) | OSD_PROFILE_1_FLAG;
+    osdElementConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1) | OSD_PROFILE_1_FLAG;
     osdConfigMutable()->link_quality_alarm = 0;
 
     osdAnalyzeActiveElements();
@@ -270,7 +269,7 @@ TEST(LQTest, TestElement_LQ_SOURCE_NONE_VALUES)
 
     linkQualitySource = LQ_SOURCE_NONE;
 
-    osdConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1) | OSD_PROFILE_1_FLAG;
+    osdElementConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1) | OSD_PROFILE_1_FLAG;
     osdConfigMutable()->link_quality_alarm = 0;
 
     osdAnalyzeActiveElements();
@@ -286,7 +285,7 @@ TEST(LQTest, TestElement_LQ_SOURCE_NONE_VALUES)
         displayPortTestPrint();
 #endif
         // then
-        if (testdigit >= 10){
+        if (testdigit >= 10) {
             displayPortTestBufferSubstring(8, 1,"%c9", SYM_LINK_QUALITY);
         }else{
             displayPortTestBufferSubstring(8, 1,"%c%1d", SYM_LINK_QUALITY, testdigit - 1);
@@ -301,7 +300,7 @@ TEST(LQTest, TestElementLQ_PROTOCOL_CRSF_VALUES)
     // given
     linkQualitySource = LQ_SOURCE_RX_PROTOCOL_CRSF;
 
-    osdConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1) | OSD_PROFILE_1_FLAG;
+    osdElementConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1) | OSD_PROFILE_1_FLAG;
     osdConfigMutable()->link_quality_alarm = 0;
 
     osdAnalyzeActiveElements();
@@ -311,16 +310,19 @@ TEST(LQTest, TestElementLQ_PROTOCOL_CRSF_VALUES)
 
     // crsf setLinkQualityDirect 0-300;
 
-    for (uint16_t x = 0; x <= 300; x++) {
-        // when x scaled
-        setLinkQualityDirect(scaleCrsfLq(x));
-        // then rxGetLinkQuality Osd should be x
-        displayClearScreen(&testDisplayPort);
-        osdRefresh(simulationTime);
-        displayPortTestBufferSubstring(8, 1,"%c%3d", SYM_LINK_QUALITY, x);
-
+    for (uint8_t x = 0; x <= 99; x++) {
+        for (uint8_t m = 0; m <= 4; m++) {
+            // when x scaled
+            setLinkQualityDirect(x);
+            rxSetRfMode(m);
+            // then rxGetLinkQuality Osd should be x
+            // and RfMode should be m
+            displayClearScreen(&testDisplayPort);
+            osdRefresh(simulationTime);
+                displayPortTestBufferSubstring(8, 1, "%c%1d:%2d", SYM_LINK_QUALITY, m, x);
+            }
+        }
     }
-}
 /*
  * Tests the LQ Alarms
  *
@@ -336,7 +338,7 @@ TEST(LQTest, TestLQAlarm)
     // and
     // the following OSD elements are visible
 
-    osdConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1)  | OSD_PROFILE_1_FLAG;
+    osdElementConfigMutable()->item_pos[OSD_LINK_QUALITY] = OSD_POS(8, 1)  | OSD_PROFILE_1_FLAG;
 
     // and
     // this set of alarm values
@@ -447,7 +449,7 @@ extern "C" {
     void persistentObjectWrite(persistentObjectId_e, uint32_t) {}
     void failsafeOnRxSuspend(uint32_t ) {}
     void failsafeOnRxResume(void) {}
-    void featureDisable(uint32_t) { }
+    void featureDisableImmediate(uint32_t) { }
     bool rxMspFrameComplete(void) { return false; }
     bool isPPMDataBeingReceived(void) { return false; }
     bool isPWMDataBeingReceived(void) { return false; }

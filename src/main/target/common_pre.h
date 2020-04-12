@@ -114,6 +114,8 @@
 #define USE_DSHOT_TELEMETRY_STATS
 #define USE_RPM_FILTER
 #define USE_DYN_IDLE
+#define I2C3_OVERCLOCK true
+#define I2C4_OVERCLOCK true
 #define USE_GYRO_DATA_ANALYSE
 #define USE_ADC_INTERNAL
 #define USE_USB_CDC_HID
@@ -135,6 +137,14 @@
 #define DEFAULT_AUX_CHANNEL_COUNT       MAX_AUX_CHANNEL_COUNT
 #else
 #define DEFAULT_AUX_CHANNEL_COUNT       6
+#endif
+
+// Set the default cpu_overclock to the first level (108MHz) for F411
+// Helps with looptime stability as the CPU is borderline when running native gyro sampling
+#if defined(USE_OVERCLOCK) && defined(STM32F411xE)
+#define DEFAULT_CPU_OVERCLOCK 1
+#else
+#define DEFAULT_CPU_OVERCLOCK 0
 #endif
 
 
@@ -199,7 +209,7 @@
 //#define USE_SERIALRX_SPEKTRUM   // SRXL, DSM2 and DSMX protocol
 //#define USE_SERIALRX_SUMD       // Graupner Hott protocol
 
-#if (FLASH_SIZE > 128)
+#if (TARGET_FLASH_SIZE > 128)
 #define PID_PROFILE_COUNT 3
 #define CONTROL_RATE_PROFILE_COUNT  6
 #else
@@ -207,8 +217,13 @@
 #define CONTROL_RATE_PROFILE_COUNT  3
 #endif
 
+<<<<<<< HEAD
 #if (FLASH_SIZE > 64)
 //#define USE_ACRO_TRAINER
+=======
+#if (TARGET_FLASH_SIZE > 64)
+#define USE_ACRO_TRAINER
+>>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_BLACKBOX
 #define USE_CLI_BATCH
 #define USE_RESOURCE_MGMT
@@ -219,7 +234,7 @@
 //#define USE_TELEMETRY_SMARTPORT
 #endif
 
-#if (FLASH_SIZE > 128)
+#if (TARGET_FLASH_SIZE > 128)
 #define USE_GYRO_OVERFLOW_CHECK
 #define USE_YAW_SPIN_RECOVERY
 #define USE_DSHOT_DMAR
@@ -227,7 +242,7 @@
 //#define USE_TELEMETRY_CRSF
 //#define USE_TELEMETRY_SRXL
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 12))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 12))
 #define USE_CMS
 #define USE_MSP_DISPLAYPORT
 #define USE_MSP_OVER_TELEMETRY
@@ -235,14 +250,14 @@
 //#define USE_LED_STRIP
 #endif
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 11))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 11))
 #define USE_VTX_COMMON
 #define USE_VTX_CONTROL
 #define USE_VTX_SMARTAUDIO
 #define USE_VTX_TRAMP
 #endif
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 10))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 10))
 #define USE_VIRTUAL_CURRENT_METER
 //#define USE_CAMERA_CONTROL
 #define USE_ESC_SENSOR
@@ -250,28 +265,34 @@
 #define USE_RCDEVICE
 #endif
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 9))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 9))
 #define USE_GYRO_LPF2
 #endif
 
+<<<<<<< HEAD
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 8))
 //#define USE_LAUNCH_CONTROL
+=======
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 8))
+#define USE_LAUNCH_CONTROL
+>>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_DYN_LPF
 #define USE_D_MIN
 #endif
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 7))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 7))
 #define USE_THROTTLE_BOOST
 #define USE_INTEGRATED_YAW_CONTROL
 #endif
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 6))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 6))
 #define USE_ITERM_RELAX
 #define USE_RC_SMOOTHING_FILTER
 #define USE_THRUST_LINEARIZATION
 #define USE_TPA_MODE
 #endif
 
+<<<<<<< HEAD
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 5))
 //#define USE_PWM
 #endif
@@ -292,23 +313,63 @@
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 2))
 /*#define USE_TELEMETRY_HOTT
+=======
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 5))
+#define USE_PWM
+#endif
+
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 4))
+#define USE_HUFFMAN
+#define USE_PINIO
+#define USE_PINIOBOX
+#endif
+
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 3))
+#ifdef USE_SERIALRX_SPEKTRUM
+#define USE_SPEKTRUM_BIND
+#define USE_SPEKTRUM_BIND_PLUG
+#define USE_SPEKTRUM_REAL_RSSI
+#define USE_SPEKTRUM_FAKE_RSSI
+#define USE_SPEKTRUM_RSSI_PERCENT_CONVERSION
+#define USE_SPEKTRUM_VTX_CONTROL
+#define USE_SPEKTRUM_VTX_TELEMETRY
+#define USE_SPEKTRUM_CMS_TELEMETRY
+#define USE_PIN_PULL_UP_DOWN
+#endif
+#endif
+
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 2))
+#define USE_TELEMETRY_HOTT
+>>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_TELEMETRY_LTM
 #define USE_SERIALRX_SUMH       // Graupner legacy protocol
 #define USE_SERIALRX_XBUS*/       // JR
 #endif
 
-#if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 1))
+#if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 1))
 #define USE_BOARD_INFO
 #define USE_EXTENDED_CMS_MENUS
 #define USE_RTC_TIME
 #define USE_RX_MSP
 #define USE_ESC_SENSOR_INFO
+<<<<<<< HEAD
+=======
+#define USE_CRSF_CMS_TELEMETRY
+#define USE_CRSF_LINK_STATISTICS
+#define USE_RX_RSSI_DBM
+#endif
+
+#endif // TARGET_FLASH_SIZE > 128
+
+#if (TARGET_FLASH_SIZE > 256)
+>>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #define USE_AIRMODE_LPF
 #define USE_CANVAS
 #define USE_DASHBOARD
 #define USE_ESCSERIAL_SIMONK
 #define USE_SERIAL_4WAY_SK_BOOTLOADER
 #define USE_CMS_FAILSAFE_MENU
+<<<<<<< HEAD
 #define USE_RX_RSSI_DBM
 #define USE_VARIO
 #define USE_RX_LINK_QUALITY_INFO
@@ -360,4 +421,15 @@
 // #define USE_SPEKTRUM_CMS_TELEMETRY
 // #define USE_PIN_PULL_UP_DOWN
 // #endif
+=======
+#define USE_CMS_GPS_RESCUE_MENU
+#define USE_TELEMETRY_SENSORS_DISABLED_DETAILS
+#define USE_VTX_TABLE
+#define USE_PERSISTENT_STATS
+#define USE_PROFILE_NAMES
+#define USE_SERIALRX_SRXL2     // Spektrum SRXL2 protocol
+#define USE_INTERPOLATED_SP
+#define USE_CUSTOM_BOX_NAMES
+#define USE_BATTERY_VOLTAGE_SAG_COMPENSATION
+>>>>>>> 2101326a1de4fa23e0a934bddeefefa2c18dedcb
 #endif

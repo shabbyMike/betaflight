@@ -27,7 +27,6 @@
 
 #ifdef USE_CMS
 
-#include "build/debug.h"
 #include "build/version.h"
 
 #include "cms/cms.h"
@@ -60,12 +59,24 @@
 // Misc
 //
 
-static const void *cmsx_menuRcConfirmBack(const OSD_Entry *self)
+static const void *cmsx_menuRcOnEnter(displayPort_t *pDisp)
 {
-    if (self && self->type == OME_Back)
+    UNUSED(pDisp);
+
+    inhibitSaveMenu();
+
+    return NULL;
+}
+
+static const void *cmsx_menuRcConfirmBack(displayPort_t *pDisp, const OSD_Entry *self)
+{
+    UNUSED(pDisp);
+
+    if (self && self->type == OME_Back) {
         return NULL;
-    else
+    } else {
         return MENU_CHAIN_BACK;
+    }
 }
 
 //
@@ -94,7 +105,7 @@ CMS_Menu cmsx_menuRcPreview = {
     .GUARD_text = "XRCPREV",
     .GUARD_type = OME_MENU,
 #endif
-    .onEnter = NULL,
+    .onEnter = cmsx_menuRcOnEnter,
     .onExit = cmsx_menuRcConfirmBack,
     .onDisplayUpdate = NULL,
     .entries = cmsx_menuRcEntries
@@ -103,26 +114,26 @@ CMS_Menu cmsx_menuRcPreview = {
 static uint16_t motorConfig_minthrottle;
 static uint8_t motorConfig_digitalIdleOffsetValue;
 static uint8_t rxConfig_fpvCamAngleDegrees;
-static debugType_e systemConfig_debug_mode;
 
-static const void *cmsx_menuMiscOnEnter(void)
+static const void *cmsx_menuMiscOnEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     motorConfig_minthrottle = motorConfig()->minthrottle;
     motorConfig_digitalIdleOffsetValue = motorConfig()->digitalIdleOffsetValue / 10;
     rxConfig_fpvCamAngleDegrees = rxConfig()->fpvCamAngleDegrees;
-    systemConfig_debug_mode = systemConfig()->debug_mode;
 
     return NULL;
 }
 
-static const void *cmsx_menuMiscOnExit(const OSD_Entry *self)
+static const void *cmsx_menuMiscOnExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
     motorConfigMutable()->minthrottle = motorConfig_minthrottle;
     motorConfigMutable()->digitalIdleOffsetValue = 10 * motorConfig_digitalIdleOffsetValue;
     rxConfigMutable()->fpvCamAngleDegrees = rxConfig_fpvCamAngleDegrees;
-    systemConfigMutable()->debug_mode = systemConfig_debug_mode;
 
     return NULL;
 }
@@ -133,7 +144,6 @@ static const OSD_Entry menuMiscEntries[]=
 
     { "MIN THR",       OME_UINT16,  NULL,          &(OSD_UINT16_t){ &motorConfig_minthrottle,            1000, 2000, 1 }, REBOOT_REQUIRED },
     { "DIGITAL IDLE",  OME_UINT8,   NULL,          &(OSD_UINT8_t) { &motorConfig_digitalIdleOffsetValue,    0,  200, 1 }, REBOOT_REQUIRED },
-    { "DEBUG MODE",    OME_TAB,     NULL,          &(OSD_TAB_t)   { &systemConfig_debug_mode, DEBUG_COUNT - 1, debugModeNames }, 0 },
     { "FPV CAM ANGLE", OME_UINT8,   NULL,          &(OSD_UINT8_t) { &rxConfig_fpvCamAngleDegrees,           0,   90, 1 }, 0 },
     { "RC PREV",       OME_Submenu, cmsMenuChange, &cmsx_menuRcPreview, 0},
 
